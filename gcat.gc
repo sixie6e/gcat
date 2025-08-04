@@ -1,0 +1,58 @@
+#The core idea is to map these four letters to a minimal set of instructions, registers, and memory addresses.
+#8bit MCU with 4 general-purpose 8-bit registers, named after the letters themselves.  256 bytes of addressable memory, each byte with an 8-bit address. Each instruction will be a sequence of one to three letters (codons).
+        A (Accumulator): math and logic operations
+        C (Counter): loops/indexing
+        G (General): general purpose
+        T (Temporary): temp storage
+
+#To get the most out of only four characters, use the position and sequence of the letters to encode different operations.
+#One letter instructions(1-codon)
+    A: NOP (No Operation): null/padding/delays.
+    C: INC (Increment): A=+ 1
+    G: DEC (Decrement): A=-1
+    T: HALT: stop
+    
+#Two letter instructions (2-codons) - Data transfer between registers. The first letter specifies the source, the second the destination.
+    AA: MOV A, A (null moce)
+    AC: MOV C, A (Move A to C)
+    AG: MOV G, A (Move A to G)
+    AT: MOV T, A (Move A to T)
+    CA: MOV A, C (Move C to A)
+    CC: MOV C, C (null move)
+#and so on for all 16 combinations.
+
+#Three letter instructions (3-codons) - Structure: [OP] [Operand1] [Operand2]
+    #Math/logic
+        AAC: ADD A, C (Add the value of C to A)
+        AAG: ADD A, G (Add the value of G to A)
+        AAT: ADD A, T (Add the value of T to A)
+        CCA: SUB A, C (Subtract the value of C from A)
+        CGA: AND A, G (Bitwise AND A with G)
+        TTA: OR A, T (Bitwise OR A with T)
+    #Memory
+        GTA: LOAD G, A (Load the value from the memory address specified by A into G)
+        GAT: STORE G, A (Store the value of G into the memory address specified by A)
+    #Conditional Jumps
+        TCA: JZ A (Jump if the A register is zero. The jump target is the next instruction in the code sequence)
+        TCC: JNZ A (Jump if the A register is not zero. The jump target is the next instruction in the code sequence)
+
+#Simple program to load the value 10 into a register and count it down to zero. There are only 4 letters so numbers can't be represented directly, only by a sequence of INC instructions
+#Initialize C register to 10. Insturction is `C` (INC A). Increment the Accumulator (A) 10 times, then move A to C.
+C C C C C C C C C C  # 10 increments to A
+CA: Move A (10) to C
+#Loop
+CA #Move C to A (to check for zero)
+TCA #Jump if A is zero (the next instruction is the target). Skip loop and halt.
+TCA #Jump Target
+CC #C=-C
+CA #Move C to A
+TCC #Jump back to loop if A != 0.
+TCA #Jump target, loops back to our LOOP label.
+T #HALT if loop completes
+
+#G-CAT 'assembler'
+    MOV A,      -> C C C C C C C C C C
+    LOOP:       -> Label, not an instruction.
+    MOV C, A    -> CA
+    JNZ LOOP    -> TCC
+#The assembler would also need to handle the jump targets by calculating the correct instruction offsets.
